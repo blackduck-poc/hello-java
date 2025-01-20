@@ -22,7 +22,7 @@ jobs:
           polaris_server_url: ${{ vars.POLARIS_SERVER_URL }}
           polaris_access_token: ${{ secrets.POLARIS_ACCESS_TOKEN }}
           polaris_application_name: "FCBR" #${{ github.event.repository.name }}
-          polaris_project_name: "insecure-bank" # ${{ github.event.repository.name }}
+          polaris_project_name: "hello-java" # ${{ github.event.repository.name }}
           polaris_assessment_types: "SCA,SAST"
           # polaris_waitForScan: false  # Used to support the async mode
           # project_directory: ${{ vars.PROJECT_DIRECTORY }}
