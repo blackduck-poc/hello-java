@@ -42,7 +42,7 @@ jobs:
           # polaris_upload_sarif_report: true 
           # github_token: ${{ secrets.GITHUB_TOKEN }} # Required when polaris_upload_sarif_report is set as true
           ### Signature scan
-          polaris_test_sca_type: "SCA-SIGNATURE"
+          # polaris_test_sca_type: "SCA-SIGNATURE"
           ### Uncomment below to add arbitrary CL parameters
           # detect_search_depth: 2
           # detect_args: '--detect.diagnostic=true'
@@ -57,8 +57,8 @@ jobs:
         with:
           polaris_server_url: ${{ vars.POLARIS_SERVER_URL }}
           polaris_access_token: ${{ secrets.POLARIS_ACCESS_TOKEN }}
-          polaris_application_name: ${{ github.event.repository.name }}
-          polaris_project_name: ${{ github.event.repository.name }}
+          polaris_application_name: "FCBR" #${{ github.event.repository.name }}
+          polaris_project_name: "hello-java" # ${{ github.event.repository.name }}
           polaris_assessment_types: "SCA,SAST"
           # project_directory: ${{ vars.PROJECT_DIRECTORY }}
           ### Uncomment below configuration for source code upload 
