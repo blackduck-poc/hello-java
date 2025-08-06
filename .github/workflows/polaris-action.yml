@@ -65,7 +65,23 @@ jobs:
           CONTENT=$(cat "$FILE_PATH")
 
           extract_values() {
-            echo "$CONTENT" | grep "$1" -A 5 | sed -nE 's/.*"(critical|high|medium|low|informational)": ([0-9]+).*/\1 \2/p'
+            echo "$CONTENT" \
+              | awk -v assessment="$1" '
+                $0 ~ assessment {
+                  in_block = 1
+                  next
+                }
+                in_block && /\{/{ in_json=1; next }
+                in_json && /\}/ { in_json=0; in_block=0; next }
+                in_json {
+                  gsub(",", "", $0)
+                  if ($1 ~ /"critical"/)      print "critical " $2
+                  else if ($1 ~ /"high"/)     print "high " $2
+                  else if ($1 ~ /"medium"/)   print "medium " $2
+                  else if ($1 ~ /"low"/)      print "low " $2
+                  else if ($1 ~ /"informational"/) print "info " $2
+                }
+              '
           }
 
           declare -A SAST=([critical]=0 [high]=0 [medium]=0 [low]=0 [info]=0)
