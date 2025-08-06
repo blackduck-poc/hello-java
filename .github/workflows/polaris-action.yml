@@ -51,6 +51,53 @@ jobs:
           coverity_clean_command: mvn clean
           # coverity_config_path: /Users/Config/coverity.yml
           # coverity_args: --enable-audit-mode
+      - name: Gera sumário do scan Polaris
+        shell: bash
+        run: |
+          FILE_PATH="$GITHUB_WORKSPACE/.bridge/Polaris Issues Fetcher/data.json"
+
+          CONTENT=$(cat "$FILE_PATH")
+
+          extract_values() {
+            echo "$CONTENT" | grep "$1" -A 5 | sed -nE 's/.*"(critical|high|medium|low|informational)": ([0-9]+).*/\1 \2/p'
+          }
+
+          declare -A SAST=([critical]=0 [high]=0 [medium]=0 [low]=0 [info]=0)
+          declare -A SCA=([critical]=0 [high]=0 [medium]=0 [low]=0 [info]=0)
+
+          while read key value; do
+            [[ $key == "informational" ]] && key="info"
+            SAST[$key]=$value
+          done < <(extract_values "SAST(sastFull)")
+
+          while read key value; do
+            [[ $key == "informational" ]] && key="info"
+            SCA[$key]=$value
+          done < <(extract_values "SCA(scaPackage)")
+
+          echo "## 🔎 Polaris Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Severity | SAST | SCA | Total |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|------|-----|--------|" >> $GITHUB_STEP_SUMMARY
+
+          for key in critical high medium low info; do
+            emoji=""
+            case $key in
+              critical) emoji="🟥 Critical" ;;
+              high)     emoji="🔴 High" ;;
+              medium)   emoji="🟡 Medium" ;;
+              low)      emoji="⚪ Low" ;;
+              info)     emoji="🧾 Info" ;;
+            esac
+
+            sast_val=${SAST[$key]:-0}
+            sca_val=${SCA[$key]:-0}
+            total=$((sast_val + sca_val))
+            echo "| $emoji | $sast_val | $sca_val | $total |" >> $GITHUB_STEP_SUMMARY
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Scan concluído em $(date +'%Y-%m-%d %H:%M')" >> $GITHUB_STEP_SUMMARY
       - name: Polaris PR Scan
         if: ${{ github.event_name == 'pull_request' }}
         uses: blackduck-inc/black-duck-security-scan@v2.0.0
