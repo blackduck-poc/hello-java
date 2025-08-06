@@ -54,7 +54,13 @@ jobs:
       - name: Gera sumário do scan Polaris
         shell: bash
         run: |
-          FILE_PATH="$GITHUB_WORKSPACE/.bridge/Polaris Issues Fetcher/data.json"
+          # Localiza o único arquivo com sufixo -stdout
+          FILE_PATH=$(find "$GITHUB_WORKSPACE/.bridge/Polaris Issues Fetcher" -type f -name '*-stdout')
+
+          if [ ! -f "$FILE_PATH" ]; then
+            echo "Arquivo stdout não encontrado."
+            exit 1
+          fi
 
           CONTENT=$(cat "$FILE_PATH")
 
@@ -81,7 +87,6 @@ jobs:
           echo "|----------|------|-----|--------|" >> $GITHUB_STEP_SUMMARY
 
           for key in critical high medium low info; do
-            emoji=""
             case $key in
               critical) emoji="🟥 Critical" ;;
               high)     emoji="🔴 High" ;;
