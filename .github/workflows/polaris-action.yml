@@ -23,102 +23,25 @@ jobs:
           polaris_access_token: ${{ secrets.POLARIS_ACCESS_TOKEN }}
           polaris_application_name: "FCBR" #${{ github.event.repository.name }}
           polaris_project_name: "hello-java" # ${{ github.event.repository.name }}
+          polaris_branch_name: "github"
           polaris_assessment_types: "SCA,SAST"
-          # polaris_waitForScan: false  # Used to support the async mode
-          # project_directory: ${{ vars.PROJECT_DIRECTORY }}
-          ### Uncomment below configuration for source code upload 
+          polaris_test_sca_type: "SCA-PACKAGE,SCA-SIGNATURE"
+          # polaris_waitForScan: false
           # polaris_assessment_mode: "SOURCE_UPLOAD"
-          # project_source_archive: ${{ vars.PROJECT_SOURCE_ARCHIVE }}
-          # project_source_excludes: ${{ vars.PROJECT_SOURCE_EXCLUDES }} # Accepts Multiple Values
-          # project_source_preserveSymLinks: true
-          ### Uncomment below configuration if Bridge diagnostic files needs to be uploaded
-          # include_diagnostics: true
-          ### SARIF report generation and upload to GitHub Adavanced Security Tab: Uncomment below to enable
           polaris_reports_sarif_create: true  
-          # polaris_reports_sarif_file_path: '/Users/tmp/report.sarif.json' # File path (including file name) where SARIF report is created.
-          # polaris_reports_sarif_severities: "CRITICAL,HIGH"
           polaris_reports_sarif_groupSCAIssues: true 
           polaris_reports_sarif_issue_types: 'SCA, SAST' 
           polaris_upload_sarif_report: true 
           github_token: ${{ secrets.GH_TOKEN }} # Required when polaris_upload_sarif_report is set as true
-          ### Signature scan
-          # polaris_test_sca_type: "SCA-SIGNATURE"
           ### Uncomment below to add arbitrary CL parameters
+          # coverity_build_command: mvn clean install
+          # coverity_clean_command: mvn clean
+          # coverity_config_path: /Users/Config/coverity.yml
+          # coverity_args: --enable-audit-mode
           # detect_search_depth: 2
           # detect_args: '--detect.diagnostic=true'
           # detect_config_path: '/Users/Config/application.properties'
-          coverity_build_command: mvn clean install
-          coverity_clean_command: mvn clean
-          # coverity_config_path: /Users/Config/coverity.yml
-          # coverity_args: --enable-audit-mode
-      - name: Gera sumário do scan Polaris
-        shell: bash
-        run: |
-          # Localiza o único arquivo com sufixo -stdout
-          FILE_PATH=$(find "$GITHUB_WORKSPACE/.bridge/Polaris Issues Fetcher" -type f -name '*-stdout')
-
-          if [ ! -f "$FILE_PATH" ]; then
-            echo "Arquivo stdout não encontrado."
-            exit 1
-          fi
-
-          CONTENT=$(cat "$FILE_PATH")
-
-          extract_values() {
-            echo "$CONTENT" \
-              | awk -v assessment="$1" '
-                $0 ~ assessment {
-                  in_block = 1
-                  next
-                }
-                in_block && /\{/{ in_json=1; next }
-                in_json && /\}/ { in_json=0; in_block=0; next }
-                in_json {
-                  gsub(",", "", $0)
-                  if ($1 ~ /"critical"/)      print "critical " $2
-                  else if ($1 ~ /"high"/)     print "high " $2
-                  else if ($1 ~ /"medium"/)   print "medium " $2
-                  else if ($1 ~ /"low"/)      print "low " $2
-                  else if ($1 ~ /"informational"/) print "info " $2
-                }
-              '
-          }
-
-          declare -A SAST=([critical]=0 [high]=0 [medium]=0 [low]=0 [info]=0)
-          declare -A SCA=([critical]=0 [high]=0 [medium]=0 [low]=0 [info]=0)
-
-          while read key value; do
-            [[ $key == "informational" ]] && key="info"
-            SAST[$key]=$value
-          done < <(extract_values "SAST(sastFull)")
-
-          while read key value; do
-            [[ $key == "informational" ]] && key="info"
-            SCA[$key]=$value
-          done < <(extract_values "SCA(scaPackage)")
-
-          echo "## 🔎 Polaris Scan Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Severity | SAST | SCA | Total |" >> $GITHUB_STEP_SUMMARY
-          echo "|----------|------|-----|--------|" >> $GITHUB_STEP_SUMMARY
-
-          for key in critical high medium low info; do
-            case $key in
-              critical) emoji="🟥 Critical" ;;
-              high)     emoji="🔴 High" ;;
-              medium)   emoji="🟡 Medium" ;;
-              low)      emoji="⚪ Low" ;;
-              info)     emoji="🧾 Info" ;;
-            esac
-
-            sast_val=${SAST[$key]:-0}
-            sca_val=${SCA[$key]:-0}
-            total=$((sast_val + sca_val))
-            echo "| $emoji | $sast_val | $sca_val | $total |" >> $GITHUB_STEP_SUMMARY
-          done
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Scan concluído em $(date +'%Y-%m-%d %H:%M')" >> $GITHUB_STEP_SUMMARY
+          
       - name: Polaris PR Scan
         if: ${{ github.event_name == 'pull_request' }}
         uses: blackduck-inc/black-duck-security-scan@v2.0.0
