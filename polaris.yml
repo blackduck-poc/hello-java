@@ -9,7 +9,7 @@ capture:
   coverity:
     autoCapture: enable
 analyze:
-  mode: central
+  mode: centralle
 install:
   coverity:
     version: default
